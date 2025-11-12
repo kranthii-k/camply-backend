@@ -16,7 +16,7 @@ We welcome contributions from the community! If you'd like to contribute, please
 
 Thanks to these amazing people for their contributions:
 
-- [Your Name](https://github.com/your-username)
+- [Kranthi K](https://github.com/kranthii-k)
 
 ## Getting Started
 
