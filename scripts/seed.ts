@@ -5,9 +5,9 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding database...");
+  console.log("Seeding database...");
 
-  // ── Users ─────────────────────────────────────────────
+  // ── Users ──────────────
   const passwordHash = await bcrypt.hash("Password123", 12);
 
   const alice = await prisma.user.upsert({
@@ -58,7 +58,7 @@ async function main() {
     },
   });
 
-  // ── Posts ─────────────────────────────────────────────
+  // ── Posts ──────────
   await prisma.post.createMany({
     data: [
       {
@@ -89,7 +89,7 @@ async function main() {
     skipDuplicates: true,
   });
 
-  // ── Community Chats ───────────────────────────────────
+  // ── Community Chats ────────
   const generalChat = await prisma.chat.upsert({
     where: { id: "00000000-0000-0000-0000-000000000001" },
     update: {},
@@ -131,7 +131,7 @@ async function main() {
     skipDuplicates: true,
   });
 
-  console.log("✅ Seed complete!");
+  console.log("Seed complete!");
   console.log(`
   Test accounts:
   ─────────────────────────────────
