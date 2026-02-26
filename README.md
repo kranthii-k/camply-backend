@@ -97,6 +97,7 @@ npm run build && npm start
 | Method | Endpoint | Auth | Description |
 |--------|---------|------|-------------|
 | GET | `/api/v1/users/:username` | ❌ | Public profile |
+| GET | `/api/v1/users/:username/posts` | ❌ | User's posts (paginated) |
 | PATCH | `/api/v1/users/me` | ✅ | Update profile |
 | PATCH | `/api/v1/users/me/avatar` | ✅ | Upload avatar |
 | PATCH | `/api/v1/users/me/password` | ✅ | Change password |
@@ -109,9 +110,11 @@ npm run build && npm start
 | GET | `/api/v1/posts` | Optional | Feed (paginated) |
 | POST | `/api/v1/posts` | ✅ | Create post |
 | GET | `/api/v1/posts/:id` | Optional | Single post + comments |
+| PATCH | `/api/v1/posts/:id` | ✅ | Edit own post |
 | DELETE | `/api/v1/posts/:id` | ✅ | Delete own post |
 | POST | `/api/v1/posts/:id/vote` | ✅ | Upvote/downvote |
 | POST | `/api/v1/posts/:id/comments` | ✅ | Add comment |
+| DELETE | `/api/v1/posts/:id/comments/:commentId` | ✅ | Delete comment |
 
 ### Matching
 
@@ -125,17 +128,23 @@ npm run build && npm start
 
 | Method | Endpoint | Auth | Description |
 |--------|---------|------|-------------|
+| GET | `/api/v1/teams?q=&hackathon=&page=&limit=` | ✅ | Browse / search all teams |
 | GET | `/api/v1/teams/mine` | ✅ | My teams |
+| GET | `/api/v1/teams/:id` | ✅ | Get team by ID |
 | POST | `/api/v1/teams` | ✅ | Create team |
+| PATCH | `/api/v1/teams/:id` | ✅ | Update team (owner only) |
 | POST | `/api/v1/teams/:id/invite` | ✅ | Invite member |
-| DELETE | `/api/v1/teams/:id` | ✅ | Delete team |
+| DELETE | `/api/v1/teams/:id/members/me` | ✅ | Leave team |
+| DELETE | `/api/v1/teams/:id` | ✅ | Delete team (owner only) |
 
 ### Chats
 
 | Method | Endpoint | Auth | Description |
 |--------|---------|------|-------------|
 | GET | `/api/v1/chats` | ✅ | List all chats |
+| POST | `/api/v1/chats` | ✅ | Create a chat room |
 | POST | `/api/v1/chats/:id/join` | ✅ | Join a chat |
+| DELETE | `/api/v1/chats/:id/members/me` | ✅ | Leave a chat |
 | GET | `/api/v1/chats/:id/messages` | ✅ | Paginated messages |
 
 ---
@@ -175,9 +184,14 @@ socket.emit("typing", chatId)
 ### Server → Client
 
 ```js
-socket.on("new-message", message)    // message with sender info
+socket.on("new-message", message)         // message with sender info
 socket.on("user-typing", { userId, username })
 socket.on("error", { message })
+// Notifications (personal room, sent automatically by the server)
+socket.on("match", { matchedUserId })     // mutual match occurred
+socket.on("new-comment", { commenterId, postId })
+socket.on("new-vote", { voterId, postId, value })
+socket.on("team-invite", { teamId, teamName })
 ```
 
 **Authentication:** Pass access token in handshake:
@@ -228,7 +242,8 @@ src/
 ├── middleware/      # Auth, validation, error handling
 ├── models/          # Zod schemas
 ├── routes/          # Express routers
-├── utils/           # JWT helpers, API response, trust score
+├── services/        # Business logic (trust score, real-time notifications)
+├── utils/           # JWT helpers, API response, trust score constants
 └── server.ts        # Entry point
 prisma/
 └── schema.prisma    # Database schema
