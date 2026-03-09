@@ -131,7 +131,7 @@ export async function createPost(
     // Update trust score (non-fatal)
     await awardTrust(req.user!.userId, "POST_CREATED");
 
-    await invalidateCache(`feed:all:*`);
+    await invalidateCache(`feed:*`);
 
     sendSuccess(res, { post }, "Post created", 201);
   } catch (err) {
@@ -310,7 +310,7 @@ export async function updatePost(
       select: POST_SELECT,
     });
 
-    await invalidateCache(`feed:all:*`);
+    await invalidateCache(`feed:*`);
     sendSuccess(res, { post: updated }, "Post updated");
   } catch (err) {
     next(err);
