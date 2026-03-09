@@ -198,6 +198,7 @@ export async function deletePost(
     }
 
     await prisma.post.delete({ where: { id } });
+    await invalidateCache(`feed:*`);
     sendSuccess(res, null, "Post deleted");
   } catch (err) {
     next(err);
