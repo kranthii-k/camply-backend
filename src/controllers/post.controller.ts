@@ -53,18 +53,20 @@ export async function getFeed(
         prisma.post.count({ where }),
       ]);
 
-      const postsWithVotes = await Promise.all(
-        posts.map(async (post) => {
-          const votes = await prisma.vote.groupBy({
-            by: ["value"],
-            where: { postId: post.id },
-            _count: { value: true },
-          });
-          const upvotes = votes.find((v: { value: number; _count: { value: number } }) => v.value === 1)?._count.value || 0;
-          const downvotes = votes.find((v: { value: number; _count: { value: number } }) => v.value === -1)?._count.value || 0;
-          return { ...post, upvotes, downvotes };
-        })
-      );
+      // ✅ Single query for ALL votes at once (replaces N+1 loop)
+      const postIds = posts.map((p) => p.id);
+      const allVotes = await prisma.vote.groupBy({
+        by: ["postId", "value"],
+        where: { postId: { in: postIds } },
+        _count: { value: true },
+      });
+
+      const postsWithVotes = posts.map((post) => {
+        const postVotes = allVotes.filter((v) => v.postId === post.id);
+        const upvotes = postVotes.find((v) => v.value === 1)?._count.value || 0;
+        const downvotes = postVotes.find((v) => v.value === -1)?._count.value || 0;
+        return { ...post, upvotes, downvotes };
+      });
 
       cachedPayload = {
         posts: postsWithVotes,
@@ -77,14 +79,14 @@ export async function getFeed(
         },
       };
 
-      await setCache(cacheKey, cachedPayload, 60); // 1 min TTL
+      await setCache(cacheKey, cachedPayload, 60);
     }
 
     // Now, dynamically attach user-specific data (userVote) to the cached/fresh payload
     if (req.user) {
       const userId = req.user.userId;
       const postIds = (cachedPayload as any).posts.map((p: any) => p.id);
-      
+
       const userVotes = await prisma.vote.findMany({
         where: {
           userId,
@@ -92,9 +94,9 @@ export async function getFeed(
         },
         select: { postId: true, value: true }
       });
-      
+
       const voteMap = new Map(userVotes.map((v: any) => [v.postId, v.value]));
-      
+
       (cachedPayload as any).posts = (cachedPayload as any).posts.map((post: any) => ({
         ...post,
         userVote: voteMap.get(post.id) ?? null
