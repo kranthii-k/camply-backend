@@ -110,8 +110,8 @@ model Post {
   updatedAt DateTime @updatedAt
 
   @@index([authorId])
-  @@index([category])
-  @@index([createdAt])
+  @@index([category, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
 }
 
 model Comment {
@@ -126,6 +126,7 @@ model Comment {
   updatedAt DateTime @updatedAt
 
   @@index([postId])
+  @@index([authorId])
 }
 
 model Vote {
@@ -140,6 +141,7 @@ model Vote {
 
   @@unique([postId, userId])
   @@index([postId])
+  @@index([userId])
 }
 
 // ─────────────────────────────────────────────────────────
@@ -226,5 +228,5 @@ model Message {
 
   createdAt DateTime @default(now())
 
-  @@index([chatId, createdAt])
+  @@index([chatId, createdAt(sort: Desc)])
 }
