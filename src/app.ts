@@ -28,6 +28,11 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:8080")
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Allow all origins in development (for mobile network testing)
+      if (process.env.NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+      
       // Allow requests with no origin (e.g. mobile / Postman)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
