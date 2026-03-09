@@ -79,7 +79,7 @@ export async function getFeed(
         },
       };
 
-      await setCache(cacheKey, cachedPayload, 60);
+      await setCache(cacheKey, cachedPayload, 300);
     }
 
     // Now, dynamically attach user-specific data (userVote) to the cached/fresh payload
