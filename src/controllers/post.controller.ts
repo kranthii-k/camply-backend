@@ -168,7 +168,25 @@ export async function getPost(
       return;
     }
 
-    sendSuccess(res, { post });
+    const allVotes = await prisma.vote.groupBy({
+      by: ["value"],
+      where: { postId: id },
+      _count: { value: true },
+    });
+
+    const upvotes = allVotes.find((v) => v.value === 1)?._count.value || 0;
+    const downvotes = allVotes.find((v) => v.value === -1)?._count.value || 0;
+
+    let userVote = null;
+    if (req.user) {
+      const currentVote = await prisma.vote.findUnique({
+        where: { postId_userId: { postId: id, userId: req.user.userId } },
+        select: { value: true },
+      });
+      userVote = currentVote?.value ?? null;
+    }
+
+    sendSuccess(res, { post: { ...post, upvotes, downvotes, userVote } });
   } catch (err) {
     next(err);
   }
