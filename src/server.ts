@@ -16,7 +16,7 @@ async function bootstrap() {
   }
 
   const httpServer = http.createServer(app);
-  initSocket(httpServer);
+  await initSocket(httpServer);
 
   httpServer.listen(PORT, () => {
     logger.info(`🚀 Camply API running on port ${PORT} [${process.env.NODE_ENV}]`);
