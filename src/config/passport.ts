@@ -5,8 +5,8 @@ import prisma from "./prisma";
 passport.use(
   new GoogleStrategy(
     {
-      clientID: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      clientID: process.env.GOOGLE_CLIENT_ID || "mock_client_id_for_testing",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "mock_client_secret_for_testing",
       callbackURL: process.env.GOOGLE_CALLBACK_URL || "/api/v1/auth/google/callback",
     },
     async (_accessToken, _refreshToken, profile, done) => {
@@ -45,7 +45,7 @@ passport.use(
         
         let usernameExists = await prisma.user.findUnique({ where: { username } });
         let suffix = 1;
-        let baseUsername = username;
+        const baseUsername = username;
         while (usernameExists) {
           username = `${baseUsername}${suffix}`;
           usernameExists = await prisma.user.findUnique({ where: { username } });
