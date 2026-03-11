@@ -105,7 +105,7 @@ export async function login(
       },
     });
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
       sendError(res, "Invalid credentials", 401);
       return;
     }

@@ -24,7 +24,7 @@ passport.use(
         let user = await prisma.user.findUnique({ where: { googleId } });
 
         if (user) {
-          return done(null, user);
+          return done(null, user as any);
         }
 
         // Check if user with email exists
@@ -36,7 +36,7 @@ passport.use(
             where: { id: user.id },
             data: { googleId },
           });
-          return done(null, user);
+          return done(null, user as any);
         }
 
         // Generate a unique username
@@ -64,7 +64,7 @@ passport.use(
           },
         });
 
-        return done(null, user);
+        return done(null, user as any);
       } catch (error) {
         return done(error, false);
       }
