@@ -15,6 +15,8 @@ import teamRoutes from "./routes/team.routes";
 import chatRoutes from "./routes/chat.routes";
 import uploadRoutes from "./routes/upload.routes";
 
+import passport from "./config/passport";
+
 import { errorHandler } from "./middleware/error.middleware";
 import { notFound } from "./middleware/notFound.middleware";
 
@@ -25,6 +27,7 @@ app.set("trust proxy", 1);
 
 // ─── Security ───────────────────────────────────────────
 app.use(helmet());
+app.use(passport.initialize());
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:8080")
   .split(",")
