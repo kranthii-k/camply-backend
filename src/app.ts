@@ -29,7 +29,7 @@ app.set("trust proxy", 1);
 app.use(helmet());
 app.use(passport.initialize());
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:8080")
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:8080,http://localhost:5173")
   .split(",")
   .map((o) => o.trim().replace(/\/$/, ""));
 
