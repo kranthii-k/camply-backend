@@ -1,13 +1,13 @@
 import request from 'supertest';
 import { describe, it, expect, beforeAll, vi } from 'vitest';
-import app from '../src/app';
-import prisma from '../src/config/prisma';
-import { generateAccessToken } from '../src/utils/jwt';
-import * as redisClient from '../src/config/redis';
+import app from '@/app';
+import prisma from '@/config/prisma';
+import { generateAccessToken } from '@/utils/jwt';
+import * as redisClient from '@/config/redis';
 
-vi.mock('../src/config/prisma');
+vi.mock('@/config/prisma');
 
-vi.mock('../src/config/redis', () => ({
+vi.mock('@/config/redis', () => ({
   getCached: vi.fn().mockResolvedValue(null),
   setCache: vi.fn().mockResolvedValue(undefined),
   invalidateCache: vi.fn().mockResolvedValue(undefined),
@@ -28,14 +28,14 @@ vi.mock('../src/config/redis', () => ({
 }));
 
 // Mock socket notifications so they don't fire real DB calls
-vi.mock('../src/services/notification.service', () => ({
+vi.mock('@/services/notification.service', () => ({
   notifyComment: vi.fn(),
   notifyVote: vi.fn(),
   notifyTeamInvite: vi.fn(),
 }));
 
 // Mock trust service so awardTrust doesn't call prisma.user.update
-vi.mock('../src/services/trust.service', () => ({
+vi.mock('@/services/trust.service', () => ({
   awardTrust: vi.fn().mockResolvedValue(undefined),
 }));
 
