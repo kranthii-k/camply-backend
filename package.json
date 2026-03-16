@@ -2,6 +2,7 @@
   "name": "camply-backend",
   "version": "1.0.0",
   "description": "Camply campus social platform backend API",
+  "license": "MIT",
   "main": "dist/server.js",
   "scripts": {
     "predev": "npx kill-port 5000",

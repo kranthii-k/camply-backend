@@ -543,3 +543,7 @@ client calculating the new state.
 ---
 
 *Built by [@kranthii-k](https://github.com/kranthii-k)*
+
+## License
+
+MIT — see LICENSE.
