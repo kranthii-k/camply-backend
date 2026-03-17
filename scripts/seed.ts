@@ -152,11 +152,7 @@ async function main() {
 
   console.log("Seed complete!");
   console.log(`
-  Test accounts:
-  ─────────────────────────────────
-  Email: alice@example.com  | Password: Password123
-  Email: bob@example.com    | Password: Password123
-  Email: priya@example.com  | Password: Password123
+  Test accounts created successfully.
   `);
 }
 
