@@ -79,6 +79,20 @@ export async function swipe(
 
     const status = action === "like" ? "PENDING" : "REJECTED";
 
+    // Duplicate guard: check if already pending or matched
+    const existing = await prisma.matchLike.findUnique({
+      where: { fromUserId_toUserId: { fromUserId, toUserId } }
+    });
+
+    if (existing && existing.status === "PENDING") {
+      sendError(res, "Invitation already sent to this user", 409);
+      return;
+    }
+    if (existing && existing.status === "MATCHED") {
+      sendError(res, "You are already matched with this user", 409);
+      return;
+    }
+
     // Upsert (in case of double-tap)
     await prisma.matchLike.upsert({
       where: { fromUserId_toUserId: { fromUserId, toUserId } },
@@ -175,6 +189,28 @@ export async function resetRejected(
     });
 
     sendSuccess(res, { reset: true }, "Profiles refreshed");
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/v1/match/reset-all
+// Deletes ALL MatchLike records for the current user
+export async function resetAll(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+
+    await prisma.matchLike.deleteMany({
+      where: {
+        fromUserId: userId,
+      },
+    });
+
+    sendSuccess(res, { reset: true }, "Starting fresh!");
   } catch (err) {
     next(err);
   }
