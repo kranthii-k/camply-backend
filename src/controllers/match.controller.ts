@@ -49,7 +49,13 @@ export async function getProfiles(
       orderBy: { trustScore: "desc" },
     });
 
-    sendSuccess(res, { profiles });
+    // Check if total pool is exhausted even after resetting rejected
+    // (i.e. if swipedIds includes everyone except self)
+    const totalUserCount = await prisma.user.count({ where: { id: { not: userId } } });
+    const swipedTotalCount = await prisma.matchLike.count({ where: { fromUserId: userId } });
+    const isPoolEmpty = swipedTotalCount >= totalUserCount;
+
+    sendSuccess(res, { profiles, isPoolEmpty });
   } catch (err) {
     next(err);
   }
@@ -169,6 +175,56 @@ export async function resetRejected(
     });
 
     sendSuccess(res, { reset: true }, "Profiles refreshed");
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/v1/match/invitations
+// Returns users who have liked the current user but were not liked back yet
+export async function getInvitations(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+
+    // We want users who sent a LIKED (PENDING) to us
+    // AND we haven't swiped on them at all yet
+    const incomingLikes = await prisma.matchLike.findMany({
+      where: { 
+        toUserId: userId, 
+        status: "PENDING" 
+      },
+      include: {
+        fromUser: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar: true,
+            bio: true,
+            skills: true,
+            trustLevel: true,
+          },
+        },
+      },
+    });
+
+    // Filtering out those the current user already swiped on
+    // (though in theory they shouldn't be PENDING if swiped back, but defensive)
+    const swiped = await prisma.matchLike.findMany({
+      where: { fromUserId: userId },
+      select: { toUserId: true }
+    });
+    const swipedIds = new Set(swiped.map(s => s.toUserId));
+
+    const invitations = incomingLikes
+      .filter(l => !swipedIds.has(l.fromUserId))
+      .map(l => l.fromUser);
+
+    sendSuccess(res, { invitations });
   } catch (err) {
     next(err);
   }
