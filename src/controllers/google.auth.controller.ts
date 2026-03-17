@@ -52,7 +52,7 @@ export async function googleCallback(
 
     setRefreshCookie(res, refreshToken);
 
-    const redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const redirectUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     res.redirect(`${redirectUrl}/auth/callback?token=${accessToken}`);
   } catch (err) {
     next(err);

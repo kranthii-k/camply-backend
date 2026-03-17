@@ -280,6 +280,34 @@ export async function me(
       return;
     }
 
+    // ─── Graceful Transition: Auto-complete onboarding if data already exists ───
+    if (!user.onboardingComplete && user.bio && user.skills && (user.skills as string[]).length > 0) {
+      const updatedUser = await prisma.user.update({
+        where: { id: req.user!.userId },
+        data: { onboardingComplete: true },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          email: true,
+          bio: true,
+          avatar: true,
+          college: true,
+          skills: true,
+          onboardingComplete: true,
+          hackathonsCount: true,
+          trustLevel: true,
+          trustScore: true,
+          createdAt: true,
+          _count: {
+            select: { posts: true, teamMembers: true },
+          },
+        },
+      });
+      sendSuccess(res, { user: updatedUser });
+      return;
+    }
+
     sendSuccess(res, { user });
   } catch (err) {
     next(err);
