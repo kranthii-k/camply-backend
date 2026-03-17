@@ -5,13 +5,12 @@ import { googleCallback } from "../controllers/google.auth.controller";
 import { validate } from "../middleware/validate.middleware";
 import { authenticate } from "../middleware/auth.middleware";
 import { registerSchema, loginSchema } from "../models/schemas";
-import { loginLimiter } from "../middleware/rateLimiters";
 
 const router = Router();
 
 // Public
-router.post("/register", loginLimiter, validate(registerSchema), register);
-router.post("/login", loginLimiter, validate(loginSchema), login);
+router.post("/register", validate(registerSchema), register);
+router.post("/login", validate(loginSchema), login);
 router.post("/refresh", refresh);
 router.post("/logout", logout);
 

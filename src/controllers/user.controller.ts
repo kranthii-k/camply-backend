@@ -4,6 +4,26 @@ import prisma from "../config/prisma";
 import { sendSuccess, sendError } from "../utils/apiResponse";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { uploadToCloudinary } from "../config/cloudinary";
+import logger from "../config/logger";
+
+const APPROVED_DOMAINS = [
+  "Frontend",
+  "Backend",
+  "DevOps",
+  "Full Stack",
+  "Design",
+  "Machine Learning",
+  "Agentic AI",
+  "Prompt Engineering",
+  "AI Automation",
+  "Operations",
+  "DSA / Competitive Programming",
+  "Database",
+  "Authentication & Security",
+] as const;
+
+const VALID_HACKATHON_COUNTS = ["1+", "5+", "10+"] as const;
+
 
 // GET /api/v1/users/:username
 export async function getProfile(
@@ -215,6 +235,75 @@ export async function getUserPosts(
       posts,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit), hasMore: skip + limit < total },
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /api/v1/users/me/onboarding
+export async function completeOnboarding(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { skills, hackathonsCount, bio } = req.body;
+
+    // Validate skills
+    if (!Array.isArray(skills) || skills.length < 2 || skills.length > 3) {
+      sendError(res, "skills must be an array of 2\u20133 items", 400);
+      return;
+    }
+    const invalidSkill = skills.find(
+      (s: string) => !APPROVED_DOMAINS.includes(s as typeof APPROVED_DOMAINS[number])
+    );
+    if (invalidSkill) {
+      sendError(res, `"${invalidSkill}" is not an approved domain`, 400);
+      return;
+    }
+
+    // Validate hackathonsCount
+    if (!VALID_HACKATHON_COUNTS.includes(hackathonsCount as typeof VALID_HACKATHON_COUNTS[number])) {
+      sendError(res, `hackathonsCount must be one of: "1+", "5+", "10+"`, 400);
+      return;
+    }
+
+    // Validate bio
+    if (typeof bio !== "string" || bio.trim().length < 10 || bio.trim().length > 300) {
+      sendError(res, "bio must be between 10 and 300 characters", 400);
+      return;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: {
+        skills,
+        hackathonsCount,
+        bio: bio.trim(),
+        onboardingComplete: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        bio: true,
+        avatar: true,
+        college: true,
+        skills: true,
+        onboardingComplete: true,
+        hackathonsCount: true,
+        trustLevel: true,
+        trustScore: true,
+        createdAt: true,
+        _count: {
+          select: { posts: true, teamMembers: true },
+        },
+      },
+    });
+
+    logger.info(`Onboarding completed for user: ${req.user!.username}`);
+    sendSuccess(res, { user: updated }, "Onboarding complete");
   } catch (err) {
     next(err);
   }

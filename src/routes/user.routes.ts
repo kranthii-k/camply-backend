@@ -6,6 +6,7 @@ import {
   changePassword,
   searchUsers,
   getUserPosts,
+  completeOnboarding,
 } from "../controllers/user.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { validate } from "../middleware/validate.middleware";
@@ -20,5 +21,6 @@ router.get("/:username/posts", getUserPosts);
 router.patch("/me", authenticate, validate(updateProfileSchema), updateProfile);
 router.patch("/me/avatar", authenticate, avatarUpload.single("avatar"), updateAvatar);
 router.patch("/me/password", authenticate, validate(changePasswordSchema), changePassword);
+router.patch("/me/onboarding", authenticate, completeOnboarding);
 
 export default router;

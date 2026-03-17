@@ -79,12 +79,15 @@ export async function register(
 
     // Real-time notification for hackathon match exhaustion state
     try {
-      getIo().emit("new-user-joined", {
+      const io = getIo();
+      io.emit("new-user-joined", {
         userId: user.id,
         username: user.username,
       });
-    } catch (err) {
-      logger.warn("Socket notification for new user failed", err);
+    } catch (socketError: any) {
+      logger.warn(
+        `[Auth] Socket.IO not initialised or emit failed — new-user-joined event skipped. Error: ${socketError.message}`
+      );
     }
 
     sendSuccess(
