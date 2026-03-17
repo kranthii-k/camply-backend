@@ -54,9 +54,11 @@ model User {
   bio          String?
   avatar       String?    // Cloudinary URL
   college      String?
-  skills       String[]   // e.g. ["React", "Node.js"]
-  trustLevel   TrustLevel @default(BRONZE)
-  trustScore   Int        @default(0)
+  skills             String[]   // e.g. ["React", "Node.js"]
+  onboardingComplete Boolean    @default(false)
+  hackathonsCount    String?
+  trustLevel         TrustLevel @default(BRONZE)
+  trustScore         Int        @default(0)
 
   // Auth
   refreshTokens RefreshToken[]
