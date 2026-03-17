@@ -150,3 +150,26 @@ export async function getMatches(
     next(err);
   }
 }
+
+// POST /api/v1/match/reset-rejected
+// Deletes REJECTED swipes for the current user
+export async function resetRejected(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+
+    await prisma.matchLike.deleteMany({
+      where: {
+        fromUserId: userId,
+        status: "REJECTED",
+      },
+    });
+
+    sendSuccess(res, { reset: true }, "Profiles refreshed");
+  } catch (err) {
+    next(err);
+  }
+}
