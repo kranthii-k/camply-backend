@@ -90,43 +90,62 @@ async function main() {
   });
 
   // ── Community Chats ────────
-  const generalChat = await prisma.chat.upsert({
-    where: { id: "00000000-0000-0000-0000-000000000001" },
+  const rnsitChat = await prisma.chat.upsert({
+    where: { id: "10000000-0000-0000-0000-000000000001" },
     update: {},
     create: {
-      id: "00000000-0000-0000-0000-000000000001",
-      name: "General",
-      topic: "Campus news and announcements",
+      id: "10000000-0000-0000-0000-000000000001",
+      name: "RNSIT",
+      topic: "RNS Institute of Technology community",
     },
   });
 
-  const hackChat = await prisma.chat.upsert({
-    where: { id: "00000000-0000-0000-0000-000000000002" },
+  const luminousChat = await prisma.chat.upsert({
+    where: { id: "10000000-0000-0000-0000-000000000002" },
     update: {},
     create: {
-      id: "00000000-0000-0000-0000-000000000002",
-      name: "Hackathon Hub",
-      topic: "Find teammates & discuss hackathons",
+      id: "10000000-0000-0000-0000-000000000002",
+      name: "Luminous",
+      topic: "Luminous community and discussions",
     },
   });
 
-  // Add members
-  for (const userId of [alice.id, bob.id, priya.id]) {
-    await prisma.chatMember
-      .upsert({
-        where: { chatId_userId: { chatId: generalChat.id, userId } },
-        update: {},
-        create: { chatId: generalChat.id, userId },
-      })
-      .catch(() => {});
-  }
+  const startupChat = await prisma.chat.upsert({
+    where: { id: "10000000-0000-0000-0000-000000000003" },
+    update: {},
+    create: {
+      id: "10000000-0000-0000-0000-000000000003",
+      name: "Startup Founders",
+      topic: "Entrepreneurship and startup discussions",
+    },
+  });
 
-  // Seed messages
+  const projectChat = await prisma.chat.upsert({
+    where: { id: "10000000-0000-0000-0000-000000000004" },
+    update: {},
+    create: {
+      id: "10000000-0000-0000-0000-000000000004",
+      name: "Project Ideas",
+      topic: "Share and discover project ideas",
+    },
+  });
+
+  // Seed welcome messages per room
   await prisma.message.createMany({
     data: [
-      { content: "Hey everyone! Welcome to Camply 🎉", chatId: generalChat.id, senderId: alice.id },
-      { content: "Thanks! Looking forward to meeting you all 👋", chatId: generalChat.id, senderId: bob.id },
-      { content: "Anyone participating in HackBangalore?", chatId: hackChat.id, senderId: priya.id },
+      // RNSIT
+      { content: "Welcome to the RNSIT community chat! 👋", chatId: rnsitChat.id, senderId: alice.id },
+      { content: "Great place to connect with fellow RNSITians 🎓", chatId: rnsitChat.id, senderId: alice.id },
+      { content: "Share updates, events, and anything RNSIT-related here!", chatId: rnsitChat.id, senderId: alice.id },
+      // Luminous
+      { content: "Welcome to the Luminous chat! ✨", chatId: luminousChat.id, senderId: alice.id },
+      { content: "Connect with the Luminous community here 🤝", chatId: luminousChat.id, senderId: alice.id },
+      // Startup Founders
+      { content: "Welcome, founders! 🚀 Let's build something great.", chatId: startupChat.id, senderId: alice.id },
+      { content: "Share your startup journey, find co-founders, and get feedback here!", chatId: startupChat.id, senderId: alice.id },
+      // Project Ideas
+      { content: "Welcome to Project Ideas! 💡", chatId: projectChat.id, senderId: alice.id },
+      { content: "Got a cool project idea? Share it here and find collaborators!", chatId: projectChat.id, senderId: alice.id },
     ],
     skipDuplicates: true,
   });
