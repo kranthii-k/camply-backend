@@ -264,6 +264,8 @@ export async function me(
         avatar: true,
         college: true,
         skills: true,
+        onboardingComplete: true,
+        hackathonsCount: true,
         trustLevel: true,
         trustScore: true,
         createdAt: true,
