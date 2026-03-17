@@ -41,6 +41,7 @@ describe('Match Controller – /api/v1/match', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    (prisma.matchLike.findUnique as any).mockResolvedValue(null);
   });
 
   // ── GET /profiles ─────────────────────────────────────────
@@ -92,9 +93,10 @@ describe('Match Controller – /api/v1/match', () => {
 
     it('200 – detects mutual match correctly', async () => {
       (prisma.matchLike.upsert as any).mockResolvedValue({});
-      // B already liked A → mutual
-      // B already liked A → mutual
-      (prisma.matchLike.findUnique as any).mockResolvedValue({ status: 'PENDING' });
+      // B already liked A (mutual), but A has not swiped on B yet (findUnique returns null)
+      (prisma.matchLike.findUnique as any)
+        .mockResolvedValueOnce(null) // for the duplicate guard at line 83
+        .mockResolvedValueOnce({ status: 'PENDING' }); // for the mutual check at line 105
       (prisma.matchLike.updateMany as any).mockResolvedValue({});
       // awardTrustToMany calls prisma.user.update
       (prisma.user.update as any).mockResolvedValue({ trustScore: 10 });
@@ -130,6 +132,30 @@ describe('Match Controller – /api/v1/match', () => {
 
       expect(res.status).toBe(400);
     });
+
+    it('409 – prevents duplicate pending invitation', async () => {
+      (prisma.matchLike.findUnique as any).mockResolvedValue({ status: 'PENDING' });
+
+      const res = await request(app)
+        .post('/api/v1/match/like')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ toUserId: USER_B.userId, action: 'like' });
+
+      expect(res.status).toBe(409);
+      expect(res.body.error.message).toContain('Invitation already sent');
+    });
+
+    it('409 – prevents duplicate match', async () => {
+      (prisma.matchLike.findUnique as any).mockResolvedValue({ status: 'MATCHED' });
+
+      const res = await request(app)
+        .post('/api/v1/match/like')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ toUserId: USER_B.userId, action: 'like' });
+
+      expect(res.status).toBe(409);
+      expect(res.body.error.message).toContain('already matched');
+    });
   });
 
   // ── GET /matches ──────────────────────────────────────────
@@ -157,6 +183,23 @@ describe('Match Controller – /api/v1/match', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.matches).toHaveLength(0);
+    });
+  });
+
+  // ── POST /reset-all ───────────────────────────────────────
+  describe('POST /reset-all', () => {
+    it('200 – deletes all matches for the user', async () => {
+      (prisma.matchLike.deleteMany as any).mockResolvedValue({ count: 5 });
+
+      const res = await request(app)
+        .post('/api/v1/match/reset-all')
+        .set('Authorization', `Bearer ${tokenA}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.reset).toBe(true);
+      expect(prisma.matchLike.deleteMany).toHaveBeenCalledWith({
+        where: { fromUserId: USER_A.userId },
+      });
     });
   });
 });

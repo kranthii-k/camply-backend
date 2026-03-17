@@ -1,5 +1,13 @@
 # 📔 Camply Development Log
 
+## 2026-03-17: Match Cycle Logic Fixes
+- Added `POST /api/v1/match/reset-all` to clear all match records.
+- Implemented duplicate swipe guard (409 Conflict) in backend controller.
+- Wired "Start fresh" button in Frontend for exhausted state.
+- Handled 409 errors in Frontend with descriptive toasts.
+- Updated match unit tests and test registry.
+
+
 ## 🔄 Sync Status: [2026-03-13]
 - **Status**: Fully Synced with `upstream/main`.
 - **Conflicts**: 
