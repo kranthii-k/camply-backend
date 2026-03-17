@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { getProfiles, swipe, getMatches } from "../controllers/match.controller";
+import {
+  getProfiles,
+  swipe,
+  getMatches,
+  resetRejected,
+} from "../controllers/match.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { validate } from "../middleware/validate.middleware";
 import { swipeSchema } from "../models/schemas";
@@ -11,5 +16,6 @@ router.use(authenticate); // All match routes require auth
 router.get("/profiles", getProfiles);
 router.post("/like", validate(swipeSchema), swipe);
 router.get("/matches", getMatches);
+router.post("/reset-rejected", resetRejected);
 
 export default router;

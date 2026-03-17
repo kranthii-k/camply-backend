@@ -10,6 +10,7 @@ import {
 import { sendSuccess, sendError } from "../utils/apiResponse";
 import { AuthRequest } from "../middleware/auth.middleware";
 import logger from "../config/logger";
+import { getIo } from "../config/socket";
 
 const SALT_ROUNDS = 12;
 
@@ -75,6 +76,16 @@ export async function register(
 
     setRefreshCookie(res, refreshToken);
     logger.info(`New user registered: ${username}`);
+
+    // Real-time notification for hackathon match exhaustion state
+    try {
+      getIo().emit("new-user-joined", {
+        userId: user.id,
+        username: user.username,
+      });
+    } catch (err) {
+      logger.warn("Socket notification for new user failed", err);
+    }
 
     sendSuccess(
       res,
