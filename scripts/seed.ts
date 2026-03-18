@@ -192,7 +192,7 @@ async function main() {
         "Proven experience with AI coding tools — portfolio or demos required",
         "Available for minimum 21 working days"
       ],
-      applyEmail: "careers@camply.live",
+      applyEmail: "contact@camply.live",
       applySubject: "Application — AI Tools Expert @ Camply",
       source: "CAMPLY_INTERNAL" as const,
       status: "ACTIVE" as const,
@@ -231,7 +231,7 @@ async function main() {
         "Demonstrable experience with AI workflows or automation tools",
         "Available for minimum 21 working days"
       ],
-      applyEmail: "careers@camply.live",
+      applyEmail: "contact@camply.live",
       applySubject: "Application — AI Automation Engineer @ Camply",
       source: "CAMPLY_INTERNAL" as const,
       status: "ACTIVE" as const,
@@ -272,7 +272,7 @@ async function main() {
         "Solid understanding of backend fundamentals (not just tutorials)",
         "Available for minimum 21 working days"
       ],
-      applyEmail: "careers@camply.live",
+      applyEmail: "contact@camply.live",
       applySubject: "Application — Backend Engineer @ Camply",
       source: "CAMPLY_INTERNAL" as const,
       status: "ACTIVE" as const,
