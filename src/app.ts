@@ -14,6 +14,9 @@ import matchRoutes from "./routes/match.routes";
 import teamRoutes from "./routes/team.routes";
 import chatRoutes from "./routes/chat.routes";
 import uploadRoutes from "./routes/upload.routes";
+import jobRoutes from "./routes/job.routes";
+import partnerTestRoutes from "./routes/partnerTest.routes";
+import placementRoutes from "./routes/placement.routes";
 
 import passport from "./config/passport";
 
@@ -87,6 +90,9 @@ app.use("/api/v1/match", matchRoutes);
 app.use("/api/v1/teams", teamRoutes);
 app.use("/api/v1/chats", chatRoutes);
 app.use("/api/v1/upload", uploadRoutes);
+app.use("/api/v1/jobs", jobRoutes);
+app.use("/api/v1/partner-tests", partnerTestRoutes);
+app.use("/api/v1/placements", placementRoutes);
 
 // ─── Error handling ──────────────────────────────────────
 app.use(notFound);
