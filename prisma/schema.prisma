@@ -77,6 +77,11 @@ model User {
   messages      Message[]
   chatMembers   ChatMember[]
 
+  // Placement
+  placementPosts    PlacementPost[]
+  placementUpvotes  PlacementUpvote[]
+  placementComments PlacementComment[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -232,4 +237,167 @@ model Message {
   createdAt DateTime @default(now())
 
   @@index([chatId, createdAt(sort: Desc)])
+}
+
+// ─────────────────────────────────────────────────────────
+// PLACEMENTS & JOBS ENUMS
+// ─────────────────────────────────────────────────────────
+
+enum JobSource {
+  CAMPLY_INTERNAL  // Camply's own hiring posts
+  PARTNER          // Incubated/external companies
+}
+
+enum JobStatus {
+  PENDING    // Submitted by company, awaiting review
+  ACTIVE     // Approved and visible
+  INACTIVE   // Hidden by admin (isActive toggle)
+  REJECTED   // Rejected during review
+}
+
+enum PlacementDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum PlacementType {
+  INTERVIEW
+  ONLINE_TEST
+  GROUP_DISCUSSION
+}
+
+// ─────────────────────────────────────────────────────────
+// JOBS (Careers / Job Posts section)
+// ─────────────────────────────────────────────────────────
+
+model Job {
+  id            String    @id @default(uuid())
+
+  // Company information
+  companyName   String    // e.g. "Camply", "Acme Corp"
+  companyLogo   String?   // URL — optional, fallback to initials in UI
+  role          String    // e.g. "AI Tools Expert"
+  location      String    // e.g. "Bangalore / Remote"
+  description   String    // Full job description (markdown supported)
+
+  // Compensation — deliberately flexible to avoid false promises
+  compensationType  String  // e.g. "Performance-based", "Equity + Perks"
+  compensationNote  String  // e.g. "Salary based on performance. Min 21-day commitment required."
+
+  // Perks (stored as string array for flexibility)
+  perks         String[]  // e.g. ["AI tools access", "RNSIT Incubation connections"]
+
+  // Requirements
+  requirements  String[]  // e.g. ["Enrolled in B.E/B.Tech CS or sister branch", "No active backlogs"]
+
+  // Application
+  applyEmail    String    // e.g. "careers@camply.live"
+  applySubject  String    // Pre-filled email subject
+
+  // Metadata
+  source        JobSource  @default(PARTNER)
+  status        JobStatus  @default(PENDING)
+  isPinned      Boolean    @default(false)   // Camply internal jobs always pinned
+
+  // Submitter info (for PARTNER source submissions via form)
+  submitterName   String?
+  submitterEmail  String?
+  submitterNote   String?  // Optional message from company
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([companyName, role])
+  @@index([status, isPinned, createdAt(sort: Desc)])
+  @@index([source, status])
+}
+
+// ─────────────────────────────────────────────────────────
+// PARTNER TESTS (Online Tests section — ed-tech platforms)
+// ─────────────────────────────────────────────────────────
+
+model PartnerTest {
+  id               String   @id @default(uuid())
+  platformName     String   // e.g. "LeetCode", "HackerEarth"
+  logoUrl          String?  // Platform logo URL
+  title            String   // e.g. "LeetCode Weekly Contest"
+  description      String   // What this test series is about
+  testLink         String   // Direct link to the test/contest
+  registrationLink String   // Link to register on the platform
+  isActive         Boolean  @default(true)
+
+  // Priority determines display order.
+  // Higher = shown first. Future paid placement uses this field.
+  // Default 0 = first-come-first-serve.
+  priority         Int      @default(0)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([platformName, title])
+  @@index([isActive, priority(sort: Desc), createdAt(sort: Desc)])
+}
+
+// ─────────────────────────────────────────────────────────
+// PLACEMENT EXPERIENCES (Community-submitted experiences)
+// ─────────────────────────────────────────────────────────
+
+model PlacementPost {
+  id          String              @id @default(uuid())
+  company     String
+  companyLogo String?             // External favicon URL — may 404, UI handles fallback
+  role        String
+  package     String              // e.g. "₹28 LPA" — stored as string (display-only)
+  location    String
+  difficulty  PlacementDifficulty
+  type        PlacementType
+  college     String
+  tags        String[]
+  preview     String              // Short excerpt shown on card
+
+  // Author linked to User — if user deletes account, post is preserved
+  // with authorId set to null (SET NULL on delete)
+  authorId    String?
+  author      User?               @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  upvotes     PlacementUpvote[]
+  comments    PlacementComment[]
+
+  isActive    Boolean @default(true)  // Soft delete / moderation
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@index([isActive, createdAt(sort: Desc)])
+}
+
+model PlacementUpvote {
+  id               String        @id @default(uuid())
+  postId           String
+  userId           String
+  post             PlacementPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime      @default(now())
+
+  @@unique([postId, userId])  // One upvote per user per post
+  @@index([postId])
+  @@index([userId])
+}
+
+model PlacementComment {
+  id      String        @id @default(uuid())
+  content String
+  postId  String
+  post    PlacementPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId String?
+  author   User?         @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
 }
