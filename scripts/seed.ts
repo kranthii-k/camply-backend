@@ -1,6 +1,5 @@
 import "dotenv/config";
-import { PrismaClient, PostCategory, TrustLevel } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -8,86 +7,8 @@ async function main() {
   console.log("Seeding database...");
 
   // ── Users ──────────────
-  const passwordHash = await bcrypt.hash("Password123", 12);
+  // Removed dummy users (alice, bob, priya) and their passwords.
 
-  const alice = await prisma.user.upsert({
-    where: { email: "alice@example.com" },
-    update: {},
-    create: {
-      name: "Alice Kumar",
-      username: "alicek",
-      email: "alice@example.com",
-      passwordHash,
-      bio: "Full-stack dev | Hackathon enthusiast",
-      college: "IIT Bangalore",
-      skills: ["React", "Node.js", "TypeScript"],
-      trustLevel: TrustLevel.GOLD,
-      trustScore: 210,
-    },
-  });
-
-  const bob = await prisma.user.upsert({
-    where: { email: "bob@example.com" },
-    update: {},
-    create: {
-      name: "Bob Sharma",
-      username: "bobs",
-      email: "bob@example.com",
-      passwordHash,
-      bio: "ML engineer | Pytorch & TensorFlow",
-      college: "NIT Trichy",
-      skills: ["Python", "PyTorch", "TensorFlow", "FastAPI"],
-      trustLevel: TrustLevel.SILVER,
-      trustScore: 80,
-    },
-  });
-
-  const priya = await prisma.user.upsert({
-    where: { email: "priya@example.com" },
-    update: {},
-    create: {
-      name: "Priya Nair",
-      username: "priyan",
-      email: "priya@example.com",
-      passwordHash,
-      bio: "UI/UX designer & frontend dev",
-      college: "BITS Pilani",
-      skills: ["Figma", "React", "Tailwind CSS"],
-      trustLevel: TrustLevel.BRONZE,
-      trustScore: 15,
-    },
-  });
-
-  // ── Posts ──────────
-  await prisma.post.createMany({
-    data: [
-      {
-        content:
-          "Looking for React + ML teammates for the upcoming HackBangalore 2025! DM me if interested 🚀",
-        category: PostCategory.DISCUSSION,
-        authorId: alice.id,
-      },
-      {
-        content:
-          "QUERY: Best way to handle auth with JWT refresh tokens in a React SPA? Cookie vs localStorage?",
-        category: PostCategory.QUERY,
-        authorId: bob.id,
-      },
-      {
-        content:
-          "SOLUTION: Use httpOnly cookies for refresh tokens and in-memory for access tokens. Here's why...",
-        category: PostCategory.SOLUTION,
-        authorId: alice.id,
-      },
-      {
-        content:
-          "JOB: Intern opening at my startup — 2-month remote internship, React + Node. College students preferred!",
-        category: PostCategory.JOB,
-        authorId: priya.id,
-      },
-    ],
-    skipDuplicates: true,
-  });
 
   // ── Community Chats ────────
   const rnsitChat = await prisma.chat.upsert({
@@ -130,25 +51,7 @@ async function main() {
     },
   });
 
-  // Seed welcome messages per room
-  await prisma.message.createMany({
-    data: [
-      // RNSIT
-      { content: "Welcome to the RNSIT community chat! 👋", chatId: rnsitChat.id, senderId: alice.id },
-      { content: "Great place to connect with fellow RNSITians 🎓", chatId: rnsitChat.id, senderId: alice.id },
-      { content: "Share updates, events, and anything RNSIT-related here!", chatId: rnsitChat.id, senderId: alice.id },
-      // Luminous
-      { content: "Welcome to the Luminous chat! ✨", chatId: luminousChat.id, senderId: alice.id },
-      { content: "Connect with the Luminous community here 🤝", chatId: luminousChat.id, senderId: alice.id },
-      // Startup Founders
-      { content: "Welcome, founders! 🚀 Let's build something great.", chatId: startupChat.id, senderId: alice.id },
-      { content: "Share your startup journey, find co-founders, and get feedback here!", chatId: startupChat.id, senderId: alice.id },
-      // Project Ideas
-      { content: "Welcome to Project Ideas! 💡", chatId: projectChat.id, senderId: alice.id },
-      { content: "Got a cool project idea? Share it here and find collaborators!", chatId: projectChat.id, senderId: alice.id },
-    ],
-    skipDuplicates: true,
-  });
+
 
   console.log("Seed complete!");
   console.log(`
@@ -365,7 +268,7 @@ async function main() {
       college: "IIT Delhi",
       tags: ["DSA", "System Design", "Behavioral"],
       preview: "3 rounds — Online test, Technical interviews covering trees, graphs, and system design for a URL shortener.",
-      authorId: alice.id,
+
     },
     {
       company: "Microsoft",
@@ -378,7 +281,7 @@ async function main() {
       college: "BITS Pilani",
       tags: ["Product Strategy", "Analytics", "Communication"],
       preview: "Case study on improving Microsoft Teams user engagement. Focus on data-driven decisions and user research.",
-      authorId: bob.id,
+
     },
     {
       company: "Amazon",
@@ -391,7 +294,7 @@ async function main() {
       college: "IIT Madras",
       tags: ["Algorithms", "OOP", "AWS"],
       preview: "4-hour coding challenge with dynamic programming, graph algorithms, and AWS service integration questions.",
-      authorId: priya.id,
+
     },
     {
       company: "Flipkart",
@@ -404,7 +307,7 @@ async function main() {
       college: "NID Ahmedabad",
       tags: ["Figma", "User Research", "Prototyping"],
       preview: "Portfolio review, design challenge to improve Flipkart's checkout flow, and discussion on design thinking.",
-      authorId: alice.id,
+
     },
     {
       company: "Zomato",
@@ -417,7 +320,7 @@ async function main() {
       college: "Delhi University",
       tags: ["SQL", "Python", "Tableau"],
       preview: "SQL queries for restaurant data analysis, Python scripting for data cleaning, and dashboard creation.",
-      authorId: bob.id,
+
     },
     {
       company: "Oracle",
@@ -430,7 +333,7 @@ async function main() {
       college: "NIT Trichy",
       tags: ["SQL", "DBA", "Cloud"],
       preview: "Two technical rounds focused on database architecture, recovery strategies, and cloud migration (OCI).",
-      authorId: priya.id,
+
     },
   ];
 
