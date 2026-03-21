@@ -18,15 +18,28 @@ const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-  logger.error("RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is missing from environment variables.");
-  throw new Error("Razorpay configuration missing");
-}
+let _razorpayClient: Razorpay | null = null;
 
-const razorpay = new Razorpay({
-  key_id: RAZORPAY_KEY_ID,
-  key_secret: RAZORPAY_KEY_SECRET,
-});
+/**
+ * Returns a lazily-initialized Razorpay client.
+ * Throws only when actually called — not at module import time.
+ * This prevents test suites from crashing when Razorpay env vars are absent.
+ */
+function getRazorpayClient(): Razorpay {
+  if (_razorpayClient) return _razorpayClient;
+
+  if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+    logger.error("RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is missing from environment variables.");
+    throw new Error("Razorpay configuration missing: RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must be set");
+  }
+
+  _razorpayClient = new Razorpay({
+    key_id: RAZORPAY_KEY_ID,
+    key_secret: RAZORPAY_KEY_SECRET,
+  });
+
+  return _razorpayClient;
+}
 
 /**
  * Creates a Razorpay subscription for the given user.
@@ -41,7 +54,7 @@ export async function createSubscription(userId: string, planType: PlanType) {
   }
 
   try {
-    const subscription = await razorpay.subscriptions.create({
+    const subscription = await getRazorpayClient().subscriptions.create({
       plan_id: planId,
       total_count: 120, // 10 years max
       quantity: 1,
@@ -279,7 +292,7 @@ export async function handleSubscriptionHalted(payload: any) {
  */
 export async function cancelSubscription(razorpaySubscriptionId: string) {
   try {
-    await razorpay.subscriptions.cancel(razorpaySubscriptionId, true); // cancel_at_cycle_end: true
+    await getRazorpayClient().subscriptions.cancel(razorpaySubscriptionId, true); // cancel_at_cycle_end: true
     
     await prisma.subscription.update({
       where: { razorpaySubscriptionId },
