@@ -5,10 +5,19 @@ import prisma from '@/config/prisma';
 import { generateAccessToken } from '@/utils/jwt';
 
 vi.mock('@/config/prisma');
+vi.mock('@/config/redis', () => ({
+  redisClient: { on: vi.fn(), get: vi.fn(), set: vi.fn(), del: vi.fn(), connect: vi.fn() },
+  getCached: vi.fn(),
+  setCache: vi.fn(),
+  invalidateCache: vi.fn(),
+  connectRedis: vi.fn(),
+}));
 
 const MOCK_USER = {
   id: 'user-1',
   username: 'testuser',
+  isPro: true,
+  proExpiry: new Date(Date.now() + 1000000),
 };
 
 const MOCK_CHAT = {
@@ -32,6 +41,7 @@ describe('Chat Controller – /api/v1/chats', () => {
 
   describe('GET /api/v1/chats', () => {
     it('200 – returns list of chats', async () => {
+      (prisma.user.findUnique as any).mockResolvedValue(MOCK_USER);
       (prisma.chat.findMany as any).mockResolvedValue([MOCK_CHAT]);
 
       const res = await request(app)
@@ -51,6 +61,7 @@ describe('Chat Controller – /api/v1/chats', () => {
 
   describe('POST /api/v1/chats', () => {
     it('201 – creates a new chat', async () => {
+      (prisma.user.findUnique as any).mockResolvedValue(MOCK_USER);
       (prisma.chat.create as any).mockResolvedValue(MOCK_CHAT);
 
       const res = await request(app)

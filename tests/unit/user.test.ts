@@ -6,9 +6,11 @@ import { generateAccessToken } from '@/utils/jwt';
 
 vi.mock('@/config/prisma');
 vi.mock('@/config/redis', () => ({
+  redisClient: { on: vi.fn(), get: vi.fn(), set: vi.fn(), del: vi.fn(), connect: vi.fn() },
   getCached: vi.fn(),
   setCache: vi.fn(),
   invalidateCache: vi.fn(),
+  connectRedis: vi.fn(),
 }));
 // Cloudinary – skip real uploads in tests
 vi.mock('@/config/cloudinary', () => ({

@@ -40,6 +40,40 @@ enum TeamRole {
   MEMBER
 }
 
+enum PlanType {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  NONE
+  PENDING
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  HALTED
+}
+
+enum HackathonSource {
+  MANUAL
+  DEVPOST
+}
+
+enum HostedEventStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  MENTION
+  VOTE
+  COMMENT
+  TEAM_INVITE
+  PRO_ACTIVATED
+  PRO_EXPIRING
+}
+
 // ─────────────────────────────────────────────────────────
 // USER
 // ─────────────────────────────────────────────────────────
@@ -59,6 +93,14 @@ model User {
   hackathonsCount    String?
   trustLevel         TrustLevel @default(BRONZE)
   trustScore         Int        @default(0)
+
+  // Pro Subscription
+  isPro               Boolean            @default(false)
+  planType            PlanType?
+  subscriptionId      String?            // Razorpay subscription ID
+  subscriptionStatus  SubscriptionStatus @default(NONE)
+  subscriptionEndsAt  DateTime?
+  proActivatedAt      DateTime?
 
   // Auth
   refreshTokens RefreshToken[]
@@ -81,6 +123,12 @@ model User {
   placementPosts    PlacementPost[]
   placementUpvotes  PlacementUpvote[]
   placementComments PlacementComment[]
+
+  // New Relations
+  subscriptions    Subscription[]
+  hostedEvents     HostedEvent[]
+  notifications    Notification[]
+  createdChats     Chat[]          @relation("CreatedChats")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -205,13 +253,19 @@ model TeamMember {
 // ─────────────────────────────────────────────────────────
 
 model Chat {
-  id      String       @id @default(uuid())
-  name    String
-  topic   String?
-  members ChatMember[]
-  messages Message[]
+  id          String       @id @default(uuid())
+  name        String
+  topic       String?
+  members     ChatMember[]
+  messages    Message[]
 
-  createdAt DateTime @default(now())
+  // New fields
+  createdById String?
+  createdBy   User?        @relation("CreatedChats", fields: [createdById], references: [id])
+  isProOnly   Boolean      @default(false)
+  isDefault   Boolean      @default(false) // marks RNSIT as free-access
+
+  createdAt   DateTime     @default(now())
 }
 
 model ChatMember {
@@ -400,4 +454,96 @@ model PlacementComment {
   updatedAt DateTime @updatedAt
 
   @@index([postId])
+}
+
+// ─────────────────────────────────────────────────────────
+// NEW MODELS
+// ─────────────────────────────────────────────────────────
+
+model Subscription {
+  id                    String             @id @default(uuid())
+  userId                String
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  razorpaySubscriptionId String            @unique
+  razorpayPaymentId     String?
+  planType              PlanType
+  status                SubscriptionStatus @default(PENDING)
+  amount                Int                // in paise
+  currency              String             @default("INR")
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelledAt           DateTime?
+  metadata              Json?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([razorpaySubscriptionId])
+}
+
+model Hackathon {
+  id            String   @id @default(uuid())
+  title         String
+  organizer     String
+  location      String
+  startDate     DateTime
+  endDate       DateTime
+  prizeMoney    String?
+  tags          String[]
+  participantCount Int?
+  learnMoreUrl  String
+  source        HackathonSource @default(MANUAL)
+  externalId    String?          // devpost ID if from API
+  isActive      Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([isActive])
+  @@index([source])
+}
+
+model HostedEvent {
+  id                  String            @id @default(uuid())
+  submittedById       String
+  submittedBy         User              @relation(fields: [submittedById], references: [id], onDelete: Cascade)
+  organisationName    String
+  eventName           String
+  description         String
+  startDate           DateTime
+  endDate             DateTime
+  venue               String
+  isOnline            Boolean           @default(false)
+  teamSize            String
+  registrationAmount  Int               @default(0)
+  posterUrl           String?
+  websiteUrl          String?
+  registrationUrl     String?
+  socialHandles       Json?             // { instagram, twitter, linkedin }
+  coordinatorName     String
+  coordinatorContact  String            // email or phone
+  tags                String[]
+  status              HostedEventStatus @default(PENDING)
+  adminNote           String?
+  approvedAt          DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([submittedById])
+  @@index([status])
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String           // recipient
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String
+  body        String
+  sourceUrl   String?          // redirect URL when clicked
+  isRead      Boolean          @default(false)
+  actorId     String?          // who triggered this notification
+  createdAt   DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt(sort: Desc)])
 }

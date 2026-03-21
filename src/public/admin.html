@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camply Admin Dashboard</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --primary: #3b82f6;
+            --text: #f8fafc;
+            --border: #334155;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 2rem; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--card); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border); }
+        .stat-card h3 { margin: 0; font-size: 0.875rem; color: #94a3b8; }
+        .stat-card p { margin: 0.5rem 0 0; font-size: 1.5rem; font-weight: bold; }
+        .section { background: var(--card); padding: 2rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 2rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); }
+        th { color: #94a3b8; font-weight: normal; }
+        .badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
+        .badge-pending { background: #ca8a0420; color: #facc15; }
+        .badge-approved { background: #16653420; color: #4ade80; }
+        button { background: var(--primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+        button.secondary { background: transparent; border: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Camply Admin</h1>
+        <a href="/admin/logout" style="color: #ef4444; text-decoration: none;">Logout</a>
+    </div>
+
+    <div class="grid" id="stats">
+        <div class="stat-card"><h3>Total Users</h3><p id="stat-users">...</p></div>
+        <div class="stat-card"><h3>Pro Users</h3><p id="stat-pro">...</p></div>
+        <div class="stat-card"><h3>Active Jobs</h3><p id="stat-jobs">...</p></div>
+        <div class="stat-card"><h3>Pending Events</h3><p id="stat-events">...</p></div>
+    </div>
+
+    <div class="section">
+        <h2>Job Approvals</h2>
+        <table id="jobs-table">
+            <thead><tr><th>Company</th><th>Role</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Event Approvals</h2>
+        <table id="events-table">
+            <thead><tr><th>Title</th><th>Host</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Manual Hackathon Entry</h2>
+        <form id="hackathon-form" style="display: grid; gap: 1rem;">
+            <input type="text" name="title" placeholder="Title" required style="padding: 0.5rem; background: var(--bg); border: 1px solid var(--border); color: white; border-radius: 4px;"/>
+            <input type="text" name="organizer" placeholder="Organizer" required style="padding: 0.5rem; background: var(--bg); border: 1px solid var(--border); color: white; border-radius: 4px;"/>
+            <input type="date" name="startDate" required style="padding: 0.5rem; background: var(--bg); border: 1px solid var(--border); color: white; border-radius: 4px;"/>
+            <input type="text" name="learnMoreUrl" placeholder="URL" required style="padding: 0.5rem; background: var(--bg); border: 1px solid var(--border); color: white; border-radius: 4px;"/>
+            <button type="submit">Create Hackathon</button>
+        </form>
+    </div>
+
+    <script>
+        async function loadData() {
+            const statsRes = await fetch('/admin/api/stats').then(r => r.json());
+            if (statsRes.success) {
+                document.getElementById('stat-users').innerText = statsRes.data.stats.users;
+                document.getElementById('stat-pro').innerText = statsRes.data.stats.proUsers;
+                document.getElementById('stat-jobs').innerText = statsRes.data.stats.activeJobs;
+                document.getElementById('stat-events').innerText = statsRes.data.stats.pendingEvents;
+            }
+
+            // Load Pending Events
+            const eventsRes = await fetch('/api/v1/events/admin').then(r => r.json());
+            if (eventsRes.success) {
+                const tbody = document.querySelector('#events-table tbody');
+                tbody.innerHTML = eventsRes.data.events.filter(e => e.status === 'PENDING').map(e => `
+                    <tr>
+                        <td>${e.title}</td>
+                        <td>${e.user.username}</td>
+                        <td>${new Date(e.date).toLocaleDateString()}</td>
+                        <td>
+                            <button onclick="approveEvent('${e.id}', 'APPROVED')">Approve</button>
+                            <button class="secondary" onclick="approveEvent('${e.id}', 'REJECTED')">Reject</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function approveEvent(id, status) {
+            await fetch(`/api/v1/events/admin/${id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            loadData();
+        }
+
+        document.getElementById('hackathon-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            // Manual hackathons can be entered via a sync endpoint or a dedicated creator
+            // For now let's just use a fetch to a future endpoint or an existing sync
+            alert('Manual entry not fully wired in API yet, but UI is ready!');
+        };
+
+        loadData();
+    </script>
+</body>
+</html>

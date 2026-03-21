@@ -200,3 +200,24 @@ export const placementCommentSchema = z.object({
     id: z.string().uuid(),
   }),
 });
+// ─── Hosted Events ───────────────────────────────────────────────
+
+export const createHostedEventSchema = z.object({
+  body: z.object({
+    title: z.string().min(5).max(100).trim(),
+    description: z.string().min(20).max(2000).trim(),
+    location: z.string().min(2).max(100).trim(),
+    date: z.string().datetime(),
+    registrationUrl: z.string().url(),
+    bannerUrl: z.string().url().optional(),
+  }),
+});
+
+export const updateEventStatusSchema = z.object({
+  body: z.object({
+    status: z.enum(["APPROVED", "REJECTED", "PENDING"]),
+  }),
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+});
