@@ -5,6 +5,7 @@ import { AuthRequest } from "../middleware/auth.middleware";
 import { getCached, setCache, invalidateCache } from "../config/redis";
 import { awardTrust } from "../services/trust.service";
 import { notifyComment, notifyVote } from "../services/notification.service";
+import * as mentionService from "../services/mention.service";
 
 const POST_SELECT = {
   id: true,
@@ -318,6 +319,14 @@ export async function addComment(
     // Notify post author (non-fatal)
     const post = await prisma.post.findUnique({ where: { id: postId }, select: { authorId: true } });
     if (post) notifyComment(post.authorId, req.user!.userId, postId);
+
+    // Parse for @mentions and notify mentioned users
+    await mentionService.processMentions(
+      content,
+      req.user!.userId,
+      `/posts/${postId}#comment-${comment.id}`,
+      'POST_COMMENT'
+    );
 
     await invalidateCache(`feed:*`);
     sendSuccess(res, { comment }, "Comment added", 201);

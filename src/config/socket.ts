@@ -5,6 +5,7 @@ import prisma from "./prisma";
 import logger from "./logger";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { createClient } from "redis";
+import * as mentionService from "../services/mention.service";
 
 interface TokenPayload {
   userId: string;
@@ -89,9 +90,41 @@ export async function initSocket(httpServer: http.Server) {
         });
 
         io.to(`chat:${chatId}`).emit("new-message", message);
+
+        // Process @mentions in chat messages
+        await mentionService.processMentions(
+          content,
+          user.userId,
+          `/?tab=community&chatId=${chatId}&messageId=${message.id}`,
+          'CHAT_MESSAGE'
+        );
       } catch (err) {
         logger.error("Socket send-message error", err);
         socket.emit("error", { message: "Failed to send message" });
+      }
+    });
+
+    // ── Delete a message ─────────────────────────────────
+    socket.on("delete-message", async (data: { chatId: string; messageId: string }) => {
+      const { chatId, messageId } = data;
+      try {
+        const [message, chat] = await Promise.all([
+          prisma.message.findUnique({ where: { id: messageId } }),
+          prisma.chat.findUnique({ where: { id: chatId }, select: { createdById: true } })
+        ]);
+
+        if (!message) return;
+
+        // Verify user is sender or chat creator
+        if (message.senderId !== user.userId && chat?.createdById !== user.userId) {
+          socket.emit("error", { message: "Unauthorized to delete this message" });
+          return;
+        }
+
+        await prisma.message.delete({ where: { id: messageId } });
+        io.to(`chat:${chatId}`).emit("message:deleted", { chatId, messageId });
+      } catch (err) {
+        logger.error("Socket delete-message error", err);
       }
     });
 

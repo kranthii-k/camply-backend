@@ -10,11 +10,20 @@ export async function getChats(
   next: NextFunction
 ): Promise<void> {
   try {
+    const isPro = req.user?.userId ? await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { isPro: true }
+    }).then(u => u?.isPro || false) : false;
+
     const chats = await prisma.chat.findMany({
+      where: isPro ? {} : { isDefault: true },
       select: {
         id: true,
         name: true,
         topic: true,
+        isDefault: true,
+        isProOnly: true,
+        createdById: true,
         _count: { select: { members: true, messages: true } },
         messages: {
           orderBy: { createdAt: "desc" },
@@ -100,12 +109,28 @@ export async function createChat(
 ): Promise<void> {
   try {
     const { name, topic } = req.body;
+    const userId = req.user!.userId;
+
+    // Pro check
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isPro: true }
+    });
+
+    if (!user?.isPro) {
+      res.status(403).json({ 
+        success: false, 
+        error: { message: "Pro subscription required to create communities", code: "PRO_REQUIRED" } 
+      });
+      return;
+    }
 
     const chat = await prisma.chat.create({
       data: {
         name,
         topic,
-        members: { create: { userId: req.user!.userId } },
+        createdById: userId,
+        members: { create: { userId } },
       },
       select: {
         id: true,
@@ -116,7 +141,45 @@ export async function createChat(
       },
     });
 
-    sendSuccess(res, { chat }, "Chat created", 201);
+    sendSuccess(res, { chat }, "Community created", 201);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// DELETE /api/v1/chats/:chatId/messages/:messageId
+export async function deleteMessage(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const chatId = req.params.chatId as string;
+    const messageId = req.params.messageId as string;
+    const userId = req.user!.userId;
+
+    const [message, chat] = await Promise.all([
+      prisma.message.findUnique({ where: { id: messageId } }),
+      prisma.chat.findUnique({ where: { id: chatId }, select: { createdById: true } })
+    ]);
+
+    if (!message) {
+      sendError(res, "Message not found", 404);
+      return;
+    }
+
+    // Check: user is sender OR chat creator
+    const isSender = message.senderId === userId;
+    const isCreator = chat?.createdById === userId;
+
+    if (!isSender && !isCreator) {
+      sendError(res, "Forbidden: Only sender or moderator can delete messages", 403);
+      return;
+    }
+
+    await prisma.message.delete({ where: { id: messageId } });
+
+    sendSuccess(res, null, "Message deleted");
   } catch (err) {
     next(err);
   }

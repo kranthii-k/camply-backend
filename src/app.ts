@@ -1,10 +1,18 @@
+/**
+ * app.ts
+ *
+ * NOTE: Route registration order is CRITICAL here.
+ * The Razorpay webhook route MUST be registered BEFORE the express.json() 
+ * and express.urlencoded() middleware. This ensures it receives the 
+ * raw request body for HMAC-SHA256 signature verification.
+ */
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import { rateLimit } from "express-rate-limit";
-import { RedisStore } from "rate-limit-redis";
+import { RedisStore as RateLimitRedisStore } from "rate-limit-redis";
 import { redisClient } from "./config/redis";
 import logger from "./config/logger";
 import authRoutes from "./routes/auth.routes";
@@ -17,8 +25,15 @@ import uploadRoutes from "./routes/upload.routes";
 import jobRoutes from "./routes/job.routes";
 import partnerTestRoutes from "./routes/partnerTest.routes";
 import placementRoutes from "./routes/placement.routes";
+import paymentRoutes from "./routes/payment.routes";
+import hackathonRoutes from "./routes/hackathon.routes";
+import notificationRoutes from "./routes/notification.routes";
+import eventRoutes from "./routes/hostedEvent.routes";
+import adminRoutes from "./routes/admin.routes";
 
 import passport from "./config/passport";
+import session from "express-session";
+import RedisStore from "connect-redis";
 
 import { errorHandler } from "./middleware/error.middleware";
 import { notFound } from "./middleware/notFound.middleware";
@@ -60,7 +75,7 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: { message: "Too many requests, please slow down." } },
-  store: new RedisStore({
+  store: new RateLimitRedisStore({
     sendCommand: (...args: string[]) => redisClient.sendCommand(args),
   }),
 });
@@ -68,9 +83,41 @@ app.use(limiter);
 
 
 // ─── Body / cookie parsing ───────────────────────────────
+// CRITICAL: Webhook routes must be registered BEFORE express.json()
+// to receive the raw body for signature verification.
+app.use("/api/v1/payments/webhook", express.raw({ type: 'application/json' }), (req, res, next) => {
+  (req as any).rawBody = req.body.toString();
+  next();
+});
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// Session for Admin Panel
+app.use(
+  session({
+    store: new RedisStore({
+      client: redisClient as any,
+      prefix: "camply:sess:",
+    }) as any,
+    secret: process.env.SESSION_SECRET || "camply-admin-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24, // 24 hours
+    },
+  })
+);
 app.use(cookieParser());
+
+// Load Razorpay SDK type definitions (Requested in Phase 15)
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 // ─── Logging ────────────────────────────────────────────
 if (process.env.NODE_ENV !== "test") {
@@ -93,6 +140,11 @@ app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/v1/jobs", jobRoutes);
 app.use("/api/v1/partner-tests", partnerTestRoutes);
 app.use("/api/v1/placements", placementRoutes);
+app.use("/api/v1/payments", paymentRoutes);
+app.use("/api/v1/hackathons", hackathonRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/events", eventRoutes);
+app.use("/admin", adminRoutes);
 
 // ─── Error handling ──────────────────────────────────────
 app.use(notFound);

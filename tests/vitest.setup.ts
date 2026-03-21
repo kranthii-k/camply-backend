@@ -28,3 +28,14 @@ vi.mock('rate-limit-redis', () => ({
 vi.mock('@socket.io/redis-adapter', () => ({
   createAdapter: vi.fn().mockReturnValue(vi.fn()),
 }));
+
+vi.mock('../src/services/payment.service', () => ({
+  createSubscription: vi.fn(),
+  verifyWebhookSignature: vi.fn().mockReturnValue(true),
+  handleSubscriptionActivated: vi.fn(),
+  handleSubscriptionCharged: vi.fn(),
+  handleSubscriptionCancelled: vi.fn(),
+  handleSubscriptionExpired: vi.fn(),
+  handleSubscriptionHalted: vi.fn(),
+  cancelSubscription: vi.fn(),
+}));
