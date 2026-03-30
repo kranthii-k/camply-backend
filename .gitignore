@@ -5,6 +5,7 @@ dist/
 *.log
 .DS_Store
 # Local Dev Artifacts
+*.md
 DEVLOG.md
 EDUCATION.md
 AGENTS.md
