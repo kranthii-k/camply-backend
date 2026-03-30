@@ -216,7 +216,7 @@ export async function getUserPosts(
 
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
-        where: { authorId: user.id },
+        where: { authorId: user.id, isFlagged: false },
         select: {
           id: true,
           content: true,

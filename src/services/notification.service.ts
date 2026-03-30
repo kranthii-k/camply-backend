@@ -62,3 +62,46 @@ export function notifyTeamInvite(
 ): void {
   emitToUser(inviteeId, "team-invite", { teamId, teamName });
 }
+
+// ── Moderation helpers ──────────────────────────────────
+
+/**
+ * Warn a user that one of their posts was flagged as offensive.
+ * A 60-second deletion countdown has started.
+ */
+export function notifyContentWarning(
+  userId: string,
+  postId: string,
+  reason: string,
+  strikes: number
+): void {
+  emitToUser(userId, "CONTENT_WARNING", {
+    postId,
+    reason,
+    strikes,
+    message: "Your post has been flagged as offensive. Delete it within 60 seconds or it will be automatically removed.",
+    autoDeleteAt: Date.now() + 60_000,
+  });
+}
+
+/**
+ * Inform a user that their flagged post was automatically deleted.
+ */
+export function notifyPostAutoDeleted(userId: string, postId: string): void {
+  emitToUser(userId, "POST_AUTO_DELETED", {
+    postId,
+    message: "Your flagged post was automatically removed after 60 seconds.",
+  });
+}
+
+/**
+ * Inform a user that their account has been suspended for 30 days.
+ * Their refresh tokens have already been revoked at this point.
+ */
+export function notifyAccountSuspended(userId: string): void {
+  emitToUser(userId, "ACCOUNT_SUSPENDED", {
+    message:
+      "Your account has been suspended for 30 days due to repeated community guideline violations.",
+    bannedUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+  });
+}
