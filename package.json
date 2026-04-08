@@ -42,7 +42,10 @@
     "streamifier": "^0.1.1",
     "uuid": "^10.0.0",
     "winston": "^3.17.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+
+    // 🔥 IMPORTANT FIX
+    "typescript": "^5.7.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -67,7 +70,6 @@
     "prisma": "^5.22.0",
     "supertest": "^7.2.2",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
     "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.18",
     "vitest-mock-extended": "^3.1.0"
