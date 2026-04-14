@@ -1,8 +1,17 @@
 import { createClient } from "redis";
 import logger from "./logger";
 
+const isSecure = process.env.REDIS_URL?.startsWith("rediss://");
+
 export const redisClient = createClient({
   url: process.env.REDIS_URL || "redis://localhost:6379",
+  socket: (isSecure ? {
+    tls: true,
+    rejectUnauthorized: false,
+    family: 4
+  } : {
+    family: 4
+  }) as any // Bypass strict TS checks for the family property
 });
 
 redisClient.on("error", (err) => logger.error("Redis error", err));
@@ -44,9 +53,9 @@ export async function invalidateCache(pattern: string): Promise<void> {
   try {
     if (pattern.includes('*')) {
       const keys: string[] = [];
-      for await (const key of redisClient.scanIterator({ 
-        MATCH: pattern, 
-        COUNT: 200 
+      for await (const key of redisClient.scanIterator({
+        MATCH: pattern,
+        COUNT: 200
       })) {
         keys.push(key);
       }

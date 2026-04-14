@@ -61,7 +61,17 @@ async function initSocket(httpServer) {
         },
     });
     try {
-        const pubClient = (0, redis_1.createClient)({ url: process.env.REDIS_URL || "redis://localhost:6379" });
+        const isSecure = process.env.REDIS_URL?.startsWith("rediss://");
+        const pubClient = (0, redis_1.createClient)({
+            url: process.env.REDIS_URL || "redis://localhost:6379",
+            socket: (isSecure ? {
+                tls: true,
+                rejectUnauthorized: false,
+                family: 4
+            } : {
+                family: 4
+            }) // Bypass strict TS checks for the family property
+        });
         const subClient = pubClient.duplicate();
         pubClient.on("error", (err) => logger_1.default.error("Socket Redis pub error:", err));
         subClient.on("error", (err) => logger_1.default.error("Socket Redis sub error:", err));

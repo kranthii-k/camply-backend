@@ -10,8 +10,16 @@ exports.setCache = setCache;
 exports.invalidateCache = invalidateCache;
 const redis_1 = require("redis");
 const logger_1 = __importDefault(require("./logger"));
+const isSecure = process.env.REDIS_URL?.startsWith("rediss://");
 exports.redisClient = (0, redis_1.createClient)({
     url: process.env.REDIS_URL || "redis://localhost:6379",
+    socket: (isSecure ? {
+        tls: true,
+        rejectUnauthorized: false,
+        family: 4
+    } : {
+        family: 4
+    }) // Bypass strict TS checks for the family property
 });
 exports.redisClient.on("error", (err) => logger_1.default.error("Redis error", err));
 exports.redisClient.on("connect", () => logger_1.default.info("Redis connected"));
