@@ -5,6 +5,7 @@
   "license": "MIT",
   "main": "dist/server.js",
   "scripts": {
+    "postinstall": "npx prisma generate && npm run build",
     "predev": "npx kill-port 5000",
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
