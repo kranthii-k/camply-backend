@@ -6,11 +6,15 @@ import { getCached, setCache, invalidateCache } from "../config/redis";
 import { awardTrust } from "../services/trust.service";
 import { notifyComment, notifyVote } from "../services/notification.service";
 import * as mentionService from "../services/mention.service";
+import * as moderationService from "../services/moderation.service";
+import logger from "../config/logger";
 
 const POST_SELECT = {
   id: true,
   content: true,
   category: true,
+  isFlagged: true,
+  moderationReason: true,
   createdAt: true,
   updatedAt: true,
   author: {
@@ -41,7 +45,10 @@ export async function getFeed(
     let cachedPayload = await getCached(cacheKey);
 
     if (!cachedPayload) {
-      const where = category ? { category: category as any } : {};
+      const where: any = { isFlagged: false };
+      if (category) {
+        where.category = category as any;
+      }
 
       const [posts, total] = await Promise.all([
         prisma.post.findMany({
@@ -133,6 +140,11 @@ export async function createPost(
     await awardTrust(req.user!.userId, "POST_CREATED");
 
     await invalidateCache(`feed:*`);
+
+    // Do NOT await this. It must remain fire-and-forget.
+    moderationService.analyzePost(post.id, content, req.user!.userId).catch((err) => {
+      logger.error(`[AI Guardian] Fatal unhandled error for post ${post.id}:`, err);
+    });
 
     sendSuccess(res, { post }, "Post created", 201);
   } catch (err) {
