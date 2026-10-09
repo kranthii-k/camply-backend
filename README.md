@@ -217,19 +217,35 @@ All responses follow this shape:
 
 ---
 
-## Deployment (Railway / Render)
+## Azure App Service Deployment
 
-1. Connect your GitHub repo
-2. Set all environment variables
-3. Build command: `npm run build`
-4. Start command: `npm start`
-5. Add PostgreSQL + Redis as managed services
+The GitHub Actions workflow in `.github/workflows/main_camply-backend.yml` deploys the `main` branch to the Azure Web App `camply-backend`. Configure these values in **Azure Portal → App Service → Settings → Environment variables**:
 
-**Recommended free-tier stack:**
-- DB: [Neon](https://neon.tech) (PostgreSQL, generous free tier)
-- Cache: [Upstash](https://upstash.com) (Redis, free tier)
-- Hosting: [Railway](https://railway.app) or [Render](https://render.com)
-- Images: [Cloudinary](https://cloudinary.com) (free tier = 25 GB)
+| Variable | Production value |
+|----------|------------------|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | PostgreSQL connection URL for the app |
+| `DIRECT_URL` | Direct PostgreSQL URL for Prisma migrations |
+| `REDIS_URL` | Managed Redis URL; use TLS (`rediss://`) when provided |
+| `JWT_ACCESS_SECRET` | Unique secret, at least 32 characters |
+| `JWT_REFRESH_SECRET` | Different unique secret, at least 32 characters |
+| `SESSION_SECRET` | Different unique secret, at least 32 characters |
+| `ALLOWED_ORIGINS` | Comma-separated HTTPS frontend origins, e.g. `https://camplyy.in,https://www.camplyy.in` |
+| `FRONTEND_URL` | Canonical HTTPS frontend origin, e.g. `https://camplyy.in` |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `GOOGLE_CALLBACK_URL` | `https://api.camplyy.in/api/v1/auth/google/callback` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret |
+
+Generate each application secret separately, for example with `openssl rand -hex 32`. Enter secret values only in Azure's environment-variable settings, never in source control. Update the example domains to match the actual frontend domain confirmed by its owner.
+
+Before releasing schema changes, back up the production database and run `npx prisma migrate deploy` against it. Do not use `prisma migrate dev` against production. Configure the Azure App Service Health check path as `/health/ready`; `/health` only reports whether the process is alive. The readiness endpoint returns HTTP 503 unless both PostgreSQL and Redis are reachable.
+
+Add `api.camplyy.in` as a custom domain on the App Service, create the DNS records Azure displays at the domain provider, bind an HTTPS certificate, and enable **HTTPS Only**. The root domain and `www` should remain pointed at the frontend host.
+
+Optional feature settings include `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL`, and the `RAZORPAY_*` variables used by the enabled payment flows.
 
 ---
 

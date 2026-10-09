@@ -1,17 +1,24 @@
 import "dotenv/config";
 import http from "http";
 import { initSocket } from "./config/socket";
-import { connectRedis } from "./config/redis";
+import { connectRedis, redisClient } from "./config/redis";
+import { assertProductionEnvironment } from "./config/production";
 import logger from "./config/logger";
 
 const PORT = process.env.PORT || 5000;
 
 async function bootstrap() {
-  // Connect Redis (non-fatal – app still works without it)
+  assertProductionEnvironment();
+
+  // Redis is optional in development but required for production requests.
   try {
     await connectRedis();
   } catch (err) {
     logger.warn("Redis unavailable – running without cache", err);
+  }
+
+  if (process.env.NODE_ENV === "production" && !redisClient.isReady) {
+    throw new Error("Redis must be available in production");
   }
 
   // Import app AFTER Redis is connected so rate-limit-redis can load its script

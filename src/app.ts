@@ -14,6 +14,7 @@ import cookieParser from "cookie-parser";
 import { rateLimit } from "express-rate-limit";
 import { RedisStore as RateLimitRedisStore } from "rate-limit-redis";
 import { redisClient } from "./config/redis";
+import prisma from "./config/prisma";
 import logger from "./config/logger";
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
@@ -127,6 +128,26 @@ if (process.env.NODE_ENV !== "test") {
 // ─── Health check ────────────────────────────────────────
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.get("/health/ready", async (_req, res) => {
+  let databaseReady = false;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    databaseReady = true;
+  } catch {
+    // Do not expose dependency errors from a public health endpoint.
+  }
+
+  const redisReady = redisClient.isReady;
+  const ready = databaseReady && redisReady;
+  res.status(ready ? 200 : 503).json({
+    status: ready ? "ok" : "not_ready",
+    checks: {
+      database: databaseReady ? "ok" : "unavailable",
+      redis: redisReady ? "ok" : "unavailable",
+    },
+  });
 });
 
 // ─── Routes ──────────────────────────────────────────────
